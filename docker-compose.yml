@@ -1,0 +1,72 @@
+version: '2'
+services:
+  godemo:
+    image: go-locking-demo
+    command: -locks host1 -server 172.28.128.7:2379 -duration 10
+    depends_on:
+      - etcd1
+      - etcd2
+      - etcd3
+    networks:
+      - etcd
+  springdemo:
+    image: spring-locking-demo
+    command: --locks=host1 --servers=http://172.28.128.7:2379 --duration=10
+    depends_on:
+      - etcd1
+      - etcd2
+      - etcd3
+    networks:
+      - etcd
+  etcd1:
+    image: quay.io/coreos/etcd
+    container_name: etcd1
+    command: >
+        etcd -name etcd1
+        -advertise-client-urls http://172.28.128.7:2379,http://172.28.128.7:4001
+        -listen-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001
+        -initial-advertise-peer-urls http://172.28.128.7:2380
+        -listen-peer-urls http://0.0.0.0:2380
+        -initial-cluster-token etcd-cluster-1
+        -initial-cluster etcd1=http://172.28.128.7:2380,etcd2=http://172.28.128.8:2380,etcd3=http://172.28.128.9:2380
+        -initial-cluster-state new
+    networks:
+      etcd:
+        ipv4_address: 172.28.128.7
+  etcd2:
+    image: quay.io/coreos/etcd
+    container_name: etcd2
+    command: >
+        etcd -name etcd2
+        -advertise-client-urls http://172.28.128.8:2379,http://172.28.128.8:4001
+        -listen-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001
+        -initial-advertise-peer-urls http://172.28.128.8:2380
+        -listen-peer-urls http://0.0.0.0:2380
+        -initial-cluster-token etcd-cluster-1
+        -initial-cluster etcd1=http://172.28.128.7:2380,etcd2=http://172.28.128.8:2380,etcd3=http://172.28.128.9:2380
+        -initial-cluster-state new
+    networks:
+      etcd:
+        ipv4_address: 172.28.128.8
+  etcd3:
+    image: quay.io/coreos/etcd
+    container_name: etcd3
+    command: >
+        etcd -name etcd3
+        -advertise-client-urls http://172.28.128.9:2379,http://172.28.128.9:4001
+        -listen-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001
+        -initial-advertise-peer-urls http://172.28.128.9:2380
+        -listen-peer-urls http://0.0.0.0:2380
+        -initial-cluster-token etcd-cluster-1
+        -initial-cluster etcd1=http://172.28.128.7:2380,etcd2=http://172.28.128.8:2380,etcd3=http://172.28.128.9:2380
+        -initial-cluster-state new
+    networks:
+      etcd:
+        ipv4_address: 172.28.128.9
+
+networks:
+  etcd:
+    driver: bridge
+    ipam:
+      config:
+      - subnet: 172.28.128.0/28
